@@ -22,6 +22,7 @@ let FIELD = 500;
 let SPEED = speedSlider.value;
 let RANDOMNESS = randomSlider.value;
 let VISIONDISTANCE = visionSlider.value;
+let SEPERATION = 10;
 let DODGE = 5;
 
 speedSlider.oninput = function(){
@@ -74,8 +75,15 @@ function draw(unitArray){
 	ctx.fillStyle = '#eee';
 	ctx.fillRect(0,0,FIELD,FIELD);
 	for(let i=0;i<unitArray.length;i++){
+		//draw vision radius
+		ctx.beginPath();
+		ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, VISIONDISTANCE, 0, 2*Math.PI, false);
+		ctx.fillStyle = `rgba(10,10,10,0.05)`;
+		ctx.fill();
+		//draw plane 
 		ctx.fillStyle = `rgb(${unitArray[i].color.r},${unitArray[i].color.g},${unitArray[i].color.b})`;
 		ctx.fillRect(unitArray[i].position.x,unitArray[i].position.y,10,10);
+		//draw velocity line
 		ctx.beginPath();
 		ctx.moveTo(unitArray[i].position.x + 5,unitArray[i].position.y + 5);
 		ctx.lineTo(unitArray[i].position.x + unitArray[i].velocity.x + 5,unitArray[i].position.y + unitArray[i].velocity.y + 5);
@@ -121,7 +129,7 @@ function moveAllBoids(planeArray, fieldSize, maxSpeed){
 		planeArray[i].velocity = addVector(planeArray[i].velocity, totalVector);
 		planeArray[i].velocity =  injectRandomness(planeArray[i].velocity, RANDOMNESS);
 		//tend to place
-		planeArray[i].velocity = addVector(planeArray[i].velocity, tendToPlace(planeArray[i]));
+		//planeArray[i].velocity = addVector(planeArray[i].velocity, tendToPlace(planeArray[i]));
 		//limit move speed
 		limitSpeed(planeArray[i], maxSpeed);
 		
@@ -150,7 +158,7 @@ function separation(currentPlane, planeArray){
 	let sepVector = {'x':0,'y':0};
 	for(let i=0;i<planeArray.length;i++){
 		if(planeArray[i] != currentPlane && currentPlane.calculateDistance(planeArray[i]) < VISIONDISTANCE){
-			if(currentPlane.calculateDistance(planeArray[i]) < 20){
+			if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION){
 				let firstSub = subVector(planeArray[i].position,currentPlane.position);
 				sepVector = subVector(sepVector, firstSub);
 			}
