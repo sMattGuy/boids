@@ -40,6 +40,14 @@
 			<br>
 			<input type="checkbox" id="goToLocation" name="goToLocation" value="false">
 			<label for="goToLocation"> Target Location?</label>
+			
+			<p>Wind Direction: <span id="windDisplay"></span></p>
+			<input type="range" min="0" max="360" value="0" id="maxWind">
+			<p>Wind Intensity: <span id="windSpeedDisplay"></span></p>
+			<input type="range" min="0" max="50" value="0" id="maxWindSpeed">
+			<br>
+			<input type="checkbox" id="windActivate" name="windActivate" value="false">
+			<label for="windActivate"> Wind?</label>
 		<script src="./script.js" onload="init()"></script>
 	</body>
 </html>

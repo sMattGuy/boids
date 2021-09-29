@@ -1,28 +1,32 @@
+//canvas setup
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
 let flag = new Image();
 flag.src = "./flag.png";
 
+//sliders
 let speedSlider = document.getElementById("maxSpeed");
 let speedInfo = document.getElementById("speedDisplay");
 speedInfo.innerHTML = speedSlider.value;
-
 let unitsSlider = document.getElementById("maxUnits");
 let unitsInfo = document.getElementById("unitDisplay");
 unitsInfo.innerHTML = unitsSlider.value;
-
 let randomSlider = document.getElementById("maxRandom");
 let randomInfo = document.getElementById("randomDisplay");
 randomInfo.innerHTML = randomSlider.value;
-
 let visionSlider = document.getElementById("maxVision");
 let visionInfo = document.getElementById("visionDisplay");
 visionInfo.innerHTML = visionSlider.value;
-
 let seperationSlider = document.getElementById("maxSeperation");
 let seperationInfo = document.getElementById("seperationDisplay");
 seperationInfo.innerHTML = seperationSlider.value;
-
+let windSlider = document.getElementById("maxWind");
+let windInfo = document.getElementById("windDisplay");
+windInfo.innerHTML = windSlider.value;
+let windSpeedSlider = document.getElementById("maxWindSpeed");
+let windSpeedInfo = document.getElementById("windSpeedDisplay");
+windSpeedInfo.innerHTML = windSpeedSlider.value;
+//constants
 let UNITS = unitsSlider.value;
 let FIELD = 500;
 let SPEED = speedSlider.value;
@@ -35,19 +39,34 @@ let DODGE = 5;
 let desiredX = FIELD / 2;
 let desiredY = FIELD / 2;
 let goingToDesired = false;
-
 canvas.addEventListener('mousedown', e => {
 	desiredX = e.offsetX;
 	desiredY = e.offsetY;
 });
-
 let locationButton = document.getElementById("goToLocation");
 locationButton.oninput = function(){
 	goingToDesired = !goingToDesired;
 }
 
+//wind variables
+let windAngle = 0;
+let windToggle = false;
+let windSpeed = 0;
+let windButton = document.getElementById("windActivate");
+windButton.oninput = function(){
+	windToggle = !windToggle;
+}
+windSlider.oninput = function(){
+	windAngle = this.value;
+	windInfo.innerHTML = this.value;
+}
+windSpeedSlider.oninput = function(){
+	windSpeed = this.value;
+	windSpeedInfo.innerHTML = this.value;
+}
 let unitArray = new Array();
 
+//event updates
 speedSlider.oninput = function(){
 	SPEED = this.value;
 	speedInfo.innerHTML = this.value;
@@ -84,6 +103,7 @@ seperationSlider.oninput = function(){
 	seperationInfo.innerHTML = this.value;
 }
 
+//start of code
 var frames = {
 	speed: (8000 / 144),
 	count: 0,
@@ -104,7 +124,7 @@ async function doFrames() {
 		draw(unitArray);
 	}, frames.speed);
 }
-
+//initial function
 function init(){
 	for(let i=0;i<UNITS;i++){
 		unitArray.push(new boid(FIELD));
@@ -178,7 +198,10 @@ function moveAllBoids(planeArray, fieldSize, maxSpeed){
 		}
 		//limit move speed
 		limitSpeed(planeArray[i], maxSpeed);
-		
+		//wind
+		if(windToggle){
+			planeArray[i].velocity = addVector(planeArray[i].velocity, induceWind());
+		}
 		planeArray[i].position = addVector(planeArray[i].position, planeArray[i].velocity);
 
 		boundPosition(planeArray[i], fieldSize);
@@ -227,11 +250,7 @@ function alignment(currentPlane, planeArray){
 	let result = divideVector(subStep, 8);
 	return result;
 }
-/*
-	http://www.kfish.org/boids/pseudocode.html
-	https://en.wikipedia.org/wiki/Boids
-	https://processing.org/examples/flocking.html
-*/
+
 //helper functions
 function limitSpeed(plane, maxSpeed){
 	if(Math.abs(plane.velocity.x) > maxSpeed){
@@ -259,6 +278,7 @@ function boundPosition(plane, fieldSize){
 		plane.velocity.y -= DODGE;
 	}
 }
+
 //modifiers
 function tendToPlace(unit){
 	let place = {'x':desiredX,'y':desiredY};
@@ -266,6 +286,17 @@ function tendToPlace(unit){
 	place = divideVector(place,100);
 	return place;
 }
+function induceWind(){
+	let norm = {'x':1,'y':0};
+	let rads = windAngle * (Math.PI / 180);
+	let shiftX = norm.x * Math.cos(rads);
+	let shiftY = norm.x * Math.sin(rads);
+	norm.x = shiftX;
+	norm.y = shiftY;
+	norm = multiplyVector(norm, windSpeed);
+	return norm;
+}
+
 //VECTOR MATH
 function addVector(vec1, vec2){
 	let total = {'x':0,'y':0};
@@ -281,6 +312,12 @@ function divideVector(vec, val){
 	total.y = vec.y / val;
 	if(isNaN(total.y))
 		total.y = 0;
+	return total;
+}
+function multiplyVector(vec, val){
+	let total = {'x':0,'y':0};
+	total.x = vec.x * val;
+	total.y = vec.y * val;
 	return total;
 }
 function subVector(vec1, vec2){
