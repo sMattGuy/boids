@@ -22,23 +22,29 @@
 				<input type="range" min="0" max="100" value="20" id="maxSeperation">
 				<p>Sep. Int.: <span id="sepIntDisplay"></span>%</p>
 				<input type="range" min="1" max="100" value="20" id="maxSepInt">
+				<p>Color Grouping?</p>
+				<input type="checkbox" id="colorBias" name="colorBias" value="false">
+				<p class="colorOption">Aversion: <span id="aversionDisplay"></span>%</p>
+				<input class="colorOption" type="range" min="1" max="100" value="10" id="maxAversion">
 			</div>
 			
 			<p>Area Modifiers</p>
 			<div class="sliders">
-				<p>Target Location?</p>
-				<input type="checkbox" id="goToLocation" name="goToLocation" value="false">
-				
-				<p>Wind?</p>
-				<input type="checkbox" id="windActivate" name="windActivate" value="false">
-				<p>Wind Direction: <span id="windDisplay"></span></p>
-				<input type="range" min="0" max="360" value="0" id="maxWind">
-				<p>Wind Intensity: <span id="windSpeedDisplay"></span></p>
-				<input type="range" min="0" max="50" value="0" id="maxWindSpeed">
-				
 				<p>Field Bounds: <span id="boundsDisplay"></span></p>
 				<input type="range" min="0" max="100" value="10" id="maxBounds">
+				<p>Target Location?</p>
+				<input type="checkbox" id="goToLocation" name="goToLocation" value="false">
+				<p>Wind?</p>
+				<input type="checkbox" id="windActivate" name="windActivate" value="false">
+				
+				<p class="windOption">Wind Direction: <span id="windDisplay"></span></p>
+				<input class="windOption" type="range" min="0" max="360" value="0" id="maxWind">
+				<p class="windOption">Wind Intensity: <span id="windSpeedDisplay"></span></p>
+				<input class="windOption" type="range" min="0" max="50" value="0" id="maxWindSpeed">	
+			
 			</div>
+			
+			
 			<p>Canvas Settings</p>
 			<div class="sliders">
 				<p>Canvas Width: <span id="widthDisplay"></span></p>

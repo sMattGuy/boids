@@ -39,6 +39,9 @@ seperationInfo.innerHTML = seperationSlider.value;
 let sepIntSlider = document.getElementById("maxSepInt");
 let sepIntInfo = document.getElementById("sepIntDisplay");
 sepIntInfo.innerHTML = sepIntSlider.value;
+let aversionSlider = document.getElementById("maxAversion");
+let aversionInfo = document.getElementById("aversionDisplay");
+aversionInfo.innerHTML = aversionSlider.value;
 //area modifiers
 let windSlider = document.getElementById("maxWind");
 let windInfo = document.getElementById("windDisplay");
@@ -64,6 +67,7 @@ heightInfo.innerHTML = heightSlider.value;
 */
 let locationButton = document.getElementById("goToLocation");
 let windButton = document.getElementById("windActivate");
+let colorBiasButton = document.getElementById("colorBias");
 
 //constants
 /*
@@ -78,6 +82,7 @@ let VISIONDISTANCE = visionSlider.value;
 let SEPERATION = seperationSlider.value;
 let BOUNDS = boundSlider.value;
 let SEPINTENSITY = sepIntSlider.value;
+let AVERSION = aversionSlider.value;
 //canvas constants
 let FIELDX = canvas.width;
 let FIELDY = canvas.height;
@@ -112,6 +117,8 @@ let windToggle = false;
 let windSpeed = 0;
 let windVector = {'x':0,'y':0};
 
+//color bias activator
+let colorBias = false;
 //event updates
 /*
 	this is where all sliders update values when they are changed
@@ -156,6 +163,10 @@ sepIntSlider.oninput = function(){
 	SEPINTENSITY = this.value;
 	sepIntInfo.innerHTML = this.value;
 }
+aversionSlider.oninput = function(){
+	AVERSION = this.value;
+	aversionInfo.innerHTML = this.value;
+}
 //area sliders
 boundSlider.oninput = function(){
 	BOUNDS = this.value;
@@ -194,12 +205,42 @@ heightSlider.oninput = function(){
 	button listening, same as above, but just for toggle buttons
 */
 windButton.oninput = function(){
+	//show elements 
+	if(!windToggle){
+		let windOpts = document.getElementsByClassName("windOption");
+		for(let i=0;i<windOpts.length;i++){
+			windOpts[i].style.display = "block";
+		}
+	}
+	//hide elements
+	else{
+		let windOpts = document.getElementsByClassName("windOption");
+		for(let i=0;i<windOpts.length;i++){
+			windOpts[i].style.display = "none";
+		}
+	}
 	windToggle = !windToggle;
 }
 locationButton.oninput = function(){
 	goingToDesired = !goingToDesired;
 }
-
+colorBiasButton.oninput = function(){
+	//show elements 
+	if(!colorBias){
+		let colorOpts = document.getElementsByClassName("colorOption");
+		for(let i=0;i<colorOpts.length;i++){
+			colorOpts[i].style.display = "block";
+		}
+	}
+	//hide elements
+	else{
+		let colorOpts = document.getElementsByClassName("colorOption");
+		for(let i=0;i<colorOpts.length;i++){
+			colorOpts[i].style.display = "none";
+		}
+	}
+	colorBias = !colorBias;
+}
 /*
 	frame setup, this prevents the boids from just going as fast
 	as possible. only have this bc of turan showing me how.
@@ -276,6 +317,11 @@ function draw(){
 	}
 	//draw units, their vision, and movement 
 	for(let i=0;i<unitArray.length;i++){
+		//draw seperation radius
+		ctx.beginPath();
+		ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, SEPERATION, 0, 2*Math.PI, false);
+		ctx.fillStyle = `rgba(255,0,0,${SEPINTENSITY/100})`;
+		ctx.fill();
 		//draw vision radius
 		ctx.beginPath();
 		ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, VISIONDISTANCE, 0, 2*Math.PI, false);
@@ -331,6 +377,10 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 	let v3 = {'x':0,'y':0};
 	let totalVector = {};
 	for(let i=0;i<planeArray.length;i++){
+		//wind, boids cannot control their speed in wind and are pushed first
+		if(windToggle){
+			planeArray[i].position = addVector(planeArray[i].position, windVector);
+		}
 		//gathering input from rules
 		v1 = cohesion(planeArray[i], planeArray);
 		v2 = separation(planeArray[i], planeArray);
@@ -348,10 +398,6 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 		planeArray[i].velocity = addVector(planeArray[i].velocity, totalVector);
 		//limit move speed
 		limitSpeed(planeArray[i], maxSpeed);
-		//wind, boids cannot control their speed in wind
-		if(windToggle){
-			planeArray[i].velocity = addVector(planeArray[i].velocity, windVector);
-		}
 		//update boids position based on velocity
 		planeArray[i].position = addVector(planeArray[i].position, planeArray[i].velocity);
 		//edit their position based on if theyre leaving the bounds
@@ -365,16 +411,27 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 	we average their positions together to define where the middle is
 	since boids have a vision radius, they are only influenced by
 	the boids around them.
-	
-	TODO: add color bias as well
 */
 function cohesion(currentPlane, planeArray){
 	let cohVector = {'x':0,'y':0,'z':0};
 	let boidsHit = 0;
 	for(let i=0;i<planeArray.length;i++){
 		if(planeArray[i] != currentPlane && currentPlane.calculateDistance(planeArray[i]) < VISIONDISTANCE){
-			cohVector = addVector(cohVector, planeArray[i].position);
-			boidsHit += 1;
+			if(colorBias){
+				//make decision based on color
+				if(sameColor(currentPlane, planeArray[i])){
+					//boids are the same
+					cohVector = addVector(cohVector, planeArray[i].position);
+					boidsHit += 1;
+				}
+				else{
+					//boids are not the same
+				}
+			}
+			else{
+				cohVector = addVector(cohVector, planeArray[i].position);
+				boidsHit += 1;
+			}
 		}
 	}
 	cohVector = divideVector(cohVector, boidsHit);
@@ -395,7 +452,19 @@ function separation(currentPlane, planeArray){
 	let sepVector = {'x':0,'y':0};
 	for(let i=0;i<planeArray.length;i++){
 		if(planeArray[i] != currentPlane && currentPlane.calculateDistance(planeArray[i]) < VISIONDISTANCE){
-			if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION){
+			if(colorBias){
+				if(!sameColor(currentPlane, planeArray[i])){
+					//strong aversion to different colors
+					let firstSub = subVector(planeArray[i].position,currentPlane.position);
+					sepVector = subVector(sepVector, multiplyVector(firstSub,(2 * (AVERSION/100))));
+				}
+				else if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION){
+					//same color
+					let firstSub = subVector(planeArray[i].position,currentPlane.position);
+					sepVector = subVector(sepVector, firstSub);
+				}
+			}
+			else if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION){
 				let firstSub = subVector(planeArray[i].position,currentPlane.position);
 				sepVector = subVector(sepVector, firstSub);
 			}
@@ -415,8 +484,20 @@ function alignment(currentPlane, planeArray){
 	let testedBoids = 0;
 	for(let i=0;i<planeArray.length;i++){
 		if(planeArray[i] != currentPlane && currentPlane.calculateDistance(planeArray[i]) < VISIONDISTANCE){
-			aliVel = addVector(aliVel, planeArray[i].velocity);
-			testedBoids += 1;
+			if(colorBias){
+				if(sameColor(currentPlane, planeArray[i])){
+					//boids are the same
+					aliVel = addVector(aliVel, planeArray[i].velocity);
+					testedBoids += 1;
+				}
+				else{
+					//do nothing
+				}
+			}
+			else{
+				aliVel = addVector(aliVel, planeArray[i].velocity);
+				testedBoids += 1;
+			}
 		}
 	}
 	//we dampen the alignment so that they dont snap
@@ -480,7 +561,80 @@ function induceWind(){
 	windVector = norm;
 	return norm;
 }
-
+function sameColor(unit1, unit2){
+	//same color is defined by if its highest color value and smallest color value is the same
+	/*
+		0 is red
+		1 is green
+		2 is blue
+	*/
+	let unit1max = '';
+	let unit1min = '';
+	let unit2max = '';
+	let unit2min = '';
+	//get unit 1 max color
+	if(unit1.color.r >= unit1.color.g && unit1.color.r >= unit1.color.b){
+		//red max
+		unit1max = 0;
+	}
+	//red is not max, check green is max
+	else if(unit1.color.g >= unit1.color.b){
+		//green max
+		unit1max = 1;
+	}
+	//blue is max
+	else{
+		unit1max = 2;
+	}
+	//get unit 1 min color
+	if(unit1.color.r <= unit1.color.g && unit1.color.r <= unit1.color.b){
+		//red min
+		unit1min = 0;
+	}
+	//red is not max, check green is max
+	else if(unit1.color.g <= unit1.color.b){
+		//green max
+		unit1min = 1;
+	}
+	//blue is max
+	else{
+		unit1min = 2;
+	}
+	
+	//get unit 2 max color
+	if(unit2.color.r >= unit2.color.g && unit2.color.r >= unit2.color.b){
+		//red max
+		unit2max = 0;
+	}
+	//red is not max, check green is max
+	else if(unit2.color.g >= unit2.color.b){
+		//green max
+		unit2max = 1;
+	}
+	//blue is max
+	else{
+		unit2max = 2;
+	}
+	//get unit 1 min color
+	if(unit2.color.r <= unit2.color.g && unit2.color.r <= unit2.color.b){
+		//red min
+		unit2min = 0;
+	}
+	//red is not max, check green is max
+	else if(unit2.color.g <= unit2.color.b){
+		//green max
+		unit2min = 1;
+	}
+	//blue is max
+	else{
+		unit2min = 2;
+	}
+	
+	if(unit1max == unit2max && unit1min == unit2min){
+		return true;
+	}
+	return false;
+}
 /*
 	this is where all vector math is handled. functions can be added here
 	as needed.
