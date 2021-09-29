@@ -1,5 +1,5 @@
-var canvas = document.getElementById("myCanvas");
-var ctx = canvas.getContext("2d");
+let canvas = document.getElementById("myCanvas");
+let ctx = canvas.getContext("2d");
 
 let speedSlider = document.getElementById("maxSpeed");
 let speedInfo = document.getElementById("speedDisplay");
@@ -17,21 +17,52 @@ let visionSlider = document.getElementById("maxVision");
 let visionInfo = document.getElementById("visionDisplay");
 visionInfo.innerHTML = visionSlider.value;
 
+let seperationSlider = document.getElementById("maxSeperation");
+let seperationInfo = document.getElementById("seperationDisplay");
+seperationInfo.innerHTML = seperationSlider.value;
+
 let UNITS = unitsSlider.value;
 let FIELD = 500;
 let SPEED = speedSlider.value;
 let RANDOMNESS = randomSlider.value;
 let VISIONDISTANCE = visionSlider.value;
-let SEPERATION = 10;
+let SEPERATION = seperationSlider.value;
 let DODGE = 5;
+
+//go to position
+let desiredX = FIELD / 2;
+let desiredY = FIELD / 2;
+let goingToDesired = false;
+
+canvas.addEventListener('mousedown', e => {
+	desiredX = e.offsetX;
+	desiredY = e.offsetY;
+});
+
+let unitArray = new Array();
 
 speedSlider.oninput = function(){
 	SPEED = this.value;
 	speedInfo.innerHTML = this.value;
 }
 unitsSlider.oninput = function(){
+	let prev = UNITS;
 	UNITS = this.value;
 	unitsInfo.innerHTML = this.value;
+	if(prev < UNITS){
+		//units added
+		let diff = UNITS - prev
+		for(let i=0;i<diff;i++){
+			unitArray.push(new boid(FIELD));
+		}
+	}
+	else if(prev > UNITS){
+		//units removed
+		let diff = prev - UNITS
+		for(let i=0;i<diff;i++){
+			unitArray.shift();
+		}
+	}
 }
 randomSlider.oninput = function(){
 	RANDOMNESS = this.value;
@@ -40,6 +71,10 @@ randomSlider.oninput = function(){
 visionSlider.oninput = function(){
 	VISIONDISTANCE = this.value;
 	visionInfo.innerHTML = this.value;
+}
+seperationSlider.oninput = function(){
+	SEPERATION = this.value;
+	seperationInfo.innerHTML = this.value;
 }
 
 var frames = {
@@ -56,7 +91,7 @@ var frames = {
 	}
 }
 
-async function doFrames(unitArray) {
+async function doFrames() {
 	frames.start(() => {
 		moveAllBoids(unitArray, FIELD, SPEED);
 		draw(unitArray);
@@ -64,14 +99,13 @@ async function doFrames(unitArray) {
 }
 
 function init(){
-	let unitArray = new Array();
 	for(let i=0;i<UNITS;i++){
 		unitArray.push(new boid(FIELD));
 	}
 	doFrames(unitArray);
 }
 
-function draw(unitArray){
+function draw(){
 	ctx.fillStyle = '#eee';
 	ctx.fillRect(0,0,FIELD,FIELD);
 	for(let i=0;i<unitArray.length;i++){
