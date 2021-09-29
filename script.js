@@ -1,5 +1,7 @@
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
+let flag = new Image();
+flag.src = "./flag.png";
 
 let speedSlider = document.getElementById("maxSpeed");
 let speedInfo = document.getElementById("speedDisplay");
@@ -38,6 +40,11 @@ canvas.addEventListener('mousedown', e => {
 	desiredX = e.offsetX;
 	desiredY = e.offsetY;
 });
+
+let locationButton = document.getElementById("goToLocation");
+locationButton.oninput = function(){
+	goingToDesired = !goingToDesired;
+}
 
 let unitArray = new Array();
 
@@ -108,6 +115,9 @@ function init(){
 function draw(){
 	ctx.fillStyle = '#eee';
 	ctx.fillRect(0,0,FIELD,FIELD);
+	if(goingToDesired){
+		ctx.drawImage(flag, desiredX - 5, desiredY - 5);
+	}
 	for(let i=0;i<unitArray.length;i++){
 		//draw vision radius
 		ctx.beginPath();
@@ -163,7 +173,9 @@ function moveAllBoids(planeArray, fieldSize, maxSpeed){
 		planeArray[i].velocity = addVector(planeArray[i].velocity, totalVector);
 		planeArray[i].velocity =  injectRandomness(planeArray[i].velocity, RANDOMNESS);
 		//tend to place
-		//planeArray[i].velocity = addVector(planeArray[i].velocity, tendToPlace(planeArray[i]));
+		if(goingToDesired){
+			planeArray[i].velocity = addVector(planeArray[i].velocity, tendToPlace(planeArray[i]));
+		}
 		//limit move speed
 		limitSpeed(planeArray[i], maxSpeed);
 		
@@ -249,8 +261,7 @@ function boundPosition(plane, fieldSize){
 }
 //modifiers
 function tendToPlace(unit){
-	let spot = FIELD/2;
-	let place = {'x':spot,'y':spot};
+	let place = {'x':desiredX,'y':desiredY};
 	place = subVector(place, unit.position);
 	place = divideVector(place,100);
 	return place;
