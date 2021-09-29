@@ -20,24 +20,43 @@ visionInfo.innerHTML = visionSlider.value;
 let seperationSlider = document.getElementById("maxSeperation");
 let seperationInfo = document.getElementById("seperationDisplay");
 seperationInfo.innerHTML = seperationSlider.value;
+
 let windSlider = document.getElementById("maxWind");
 let windInfo = document.getElementById("windDisplay");
 windInfo.innerHTML = windSlider.value;
 let windSpeedSlider = document.getElementById("maxWindSpeed");
 let windSpeedInfo = document.getElementById("windSpeedDisplay");
 windSpeedInfo.innerHTML = windSpeedSlider.value;
+
+let boundSlider = document.getElementById("maxBounds");
+let boundInfo = document.getElementById("boundsDisplay");
+boundInfo.innerHTML = boundSlider.value;
+
+let widthSlider = document.getElementById("maxWidth");
+let widthInfo = document.getElementById("widthDisplay");
+widthInfo.innerHTML = widthSlider.value;
+let heightSlider = document.getElementById("maxHeight");
+let heightInfo = document.getElementById("heightDisplay");
+heightInfo.innerHTML = heightSlider.value;
+
 //constants
 let UNITS = unitsSlider.value;
-let FIELD = 500;
+let FIELDX = canvas.width;
+let FIELDY = canvas.height;
 let SPEED = speedSlider.value;
 let RANDOMNESS = randomSlider.value;
 let VISIONDISTANCE = visionSlider.value;
 let SEPERATION = seperationSlider.value;
-let DODGE = 5;
+let BOUNDS = boundSlider.value;
+
+let XMIN = BOUNDS;
+let XMAX = FIELDX - BOUNDS;
+let YMIN = BOUNDS;
+let YMAX = FIELDY - BOUNDS;
 
 //go to position
-let desiredX = FIELD / 2;
-let desiredY = FIELD / 2;
+let desiredX = FIELDX / 2;
+let desiredY = FIELDY / 2;
 let goingToDesired = false;
 canvas.addEventListener('mousedown', e => {
 	desiredX = e.offsetX;
@@ -52,6 +71,7 @@ locationButton.oninput = function(){
 let windAngle = 0;
 let windToggle = false;
 let windSpeed = 0;
+let windVector = {'x':0,'y':0};
 let windButton = document.getElementById("windActivate");
 windButton.oninput = function(){
 	windToggle = !windToggle;
@@ -79,7 +99,7 @@ unitsSlider.oninput = function(){
 		//units added
 		let diff = UNITS - prev
 		for(let i=0;i<diff;i++){
-			unitArray.push(new boid(FIELD));
+			unitArray.push(new boid(FIELDX, FIELDY));
 		}
 	}
 	else if(prev > UNITS){
@@ -102,7 +122,29 @@ seperationSlider.oninput = function(){
 	SEPERATION = this.value;
 	seperationInfo.innerHTML = this.value;
 }
+boundSlider.oninput = function(){
+	BOUNDS = this.value;
+	boundInfo.innerHTML = this.value;
+	XMIN = BOUNDS;
+	XMAX = FIELDX - BOUNDS;
+	YMIN = BOUNDS;
+	YMAX = FIELDY - BOUNDS;
+}
 
+widthSlider.oninput = function(){
+	FIELDX = this.value;
+	canvas.width = this.value;
+	widthInfo.innerHTML = this.value;
+	XMIN = BOUNDS;
+	XMAX = FIELDX - BOUNDS;
+}
+heightSlider.oninput = function(){
+	FIELDY = this.value;
+	canvas.height = this.value;
+	heightInfo.innerHTML = this.value;
+	YMIN = BOUNDS;
+	YMAX = FIELDY - BOUNDS;
+}
 //start of code
 var frames = {
 	speed: (8000 / 144),
@@ -120,21 +162,49 @@ var frames = {
 
 async function doFrames() {
 	frames.start(() => {
-		moveAllBoids(unitArray, FIELD, SPEED);
+		moveAllBoids(unitArray, FIELDX, FIELDY, SPEED);
 		draw(unitArray);
 	}, frames.speed);
 }
 //initial function
 function init(){
 	for(let i=0;i<UNITS;i++){
-		unitArray.push(new boid(FIELD));
+		unitArray.push(new boid(FIELDX, FIELDY));
 	}
-	doFrames(unitArray);
+	doFrames();
 }
 
 function draw(){
 	ctx.fillStyle = '#eee';
-	ctx.fillRect(0,0,FIELD,FIELD);
+	ctx.fillRect(0,0,FIELDX,FIELDY);
+	//draw bounding limit
+	ctx.fillStyle = 'rgba(255,0,0,0.05)';
+	//left bound
+	ctx.fillRect(0,0,XMIN,YMAX);
+	//upper
+	ctx.fillRect(XMIN,0,FIELDX,YMIN);
+	//right
+	ctx.fillRect(XMAX,YMIN,FIELDX,FIELDY);
+	//lower
+	ctx.fillRect(0,YMAX,XMAX,FIELDY);
+	//draw wind
+	if(windToggle){
+		for(let i=0;i<FIELDX/50;i++){
+			for(let j=0;j<FIELDY/50;j++){
+				//base of wind
+				ctx.beginPath();
+				ctx.arc(i*50,j*50, 3, 0, 2*Math.PI, false);
+				ctx.fillStyle = `rgba(10,10,10,0.05)`;
+				ctx.fill();
+				ctx.beginPath();
+				ctx.moveTo(i*50,j*50);
+				ctx.lineTo((i*50) + windVector.x, (j*50) + windVector.y);
+				ctx.strokeStyle = `rgba(20,20,20,0.10)`;
+				ctx.stroke();
+			}
+		}
+	}
+	//draw flag
 	if(goingToDesired){
 		ctx.drawImage(flag, desiredX - 5, desiredY - 5);
 	}
@@ -151,6 +221,7 @@ function draw(){
 		ctx.beginPath();
 		ctx.moveTo(unitArray[i].position.x + 5,unitArray[i].position.y + 5);
 		ctx.lineTo(unitArray[i].position.x + unitArray[i].velocity.x + 5,unitArray[i].position.y + unitArray[i].velocity.y + 5);
+		ctx.strokeStyle = `rgb(0,0,0)`;
 		ctx.stroke();
 	}
 }
@@ -160,9 +231,9 @@ class boid{
 	velocity = {'x':0,'y':0};
 	color = {'r':0,'g':0,'b':0};
 	
-	constructor(bound){
-		this.position.x = Math.floor(Math.random() * bound);
-		this.position.y = Math.floor(Math.random() * bound);
+	constructor(boundX, boundY){
+		this.position.x = Math.floor(Math.random() * boundX);
+		this.position.y = Math.floor(Math.random() * boundY);
 		
 		this.velocity.x = Math.floor(Math.random() * (SPEED * 2)) - SPEED;
 		this.velocity.y = Math.floor(Math.random() * (SPEED * 2)) - SPEED;
@@ -177,7 +248,7 @@ class boid{
 	}
 }
 
-function moveAllBoids(planeArray, fieldSize, maxSpeed){
+function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 	let v1 = {'x':0,'y':0};
 	let v2 = {'x':0,'y':0};
 	let v3 = {'x':0,'y':0};
@@ -204,7 +275,7 @@ function moveAllBoids(planeArray, fieldSize, maxSpeed){
 		}
 		planeArray[i].position = addVector(planeArray[i].position, planeArray[i].velocity);
 
-		boundPosition(planeArray[i], fieldSize);
+		boundPosition(planeArray[i]);
 	}
 }
 //rule 1
@@ -260,11 +331,8 @@ function limitSpeed(plane, maxSpeed){
 		plane.velocity.y = (plane.velocity.y / Math.abs(plane.velocity.y)) * maxSpeed;
 	}
 }
-function boundPosition(plane, fieldSize){
-	const XMIN = 10;
-	const XMAX = FIELD - 10;
-	const YMIN = 10;
-	const YMAX = FIELD - 10;
+function boundPosition(plane){
+	const DODGE = 5;
 	if(plane.position.x < XMIN){
 		plane.velocity.x += DODGE;
 	}
@@ -294,6 +362,7 @@ function induceWind(){
 	norm.x = shiftX;
 	norm.y = shiftY;
 	norm = multiplyVector(norm, windSpeed);
+	windVector = norm;
 	return norm;
 }
 
