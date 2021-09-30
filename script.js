@@ -68,6 +68,7 @@ heightInfo.innerHTML = heightSlider.value;
 let locationButton = document.getElementById("goToLocation");
 let windButton = document.getElementById("windActivate");
 let colorBiasButton = document.getElementById("colorBias");
+let battleButton = document.getElementById("battleToggle");
 
 //constants
 /*
@@ -83,6 +84,7 @@ let SEPERATION = seperationSlider.value;
 let BOUNDS = boundSlider.value;
 let SEPINTENSITY = sepIntSlider.value;
 let AVERSION = aversionSlider.value;
+let BATTLE = false;
 //canvas constants
 let FIELDX = canvas.width;
 let FIELDY = canvas.height;
@@ -241,6 +243,10 @@ colorBiasButton.oninput = function(){
 	}
 	colorBias = !colorBias;
 }
+battleButton.oninput = function(){
+	BATTLE = !BATTLE;
+}
+let battleGrounds = new Array();
 /*
 	frame setup, this prevents the boids from just going as fast
 	as possible. only have this bc of turan showing me how.
@@ -262,6 +268,9 @@ var frames = {
 async function doFrames() {
 	frames.start(() => {
 		moveAllBoids(unitArray, FIELDX, FIELDY, SPEED);
+		if(BATTLE){
+			battle();
+		}
 		draw(unitArray);
 	}, frames.speed);
 }
@@ -275,6 +284,37 @@ function init(){
 		unitArray.push(new boid(FIELDX, FIELDY));
 	}
 	doFrames();
+}
+
+function battle(){
+	for(let i=0;i<unitArray.length;i++){
+		if(unitArray[i] != null){
+			for(let j=0;j<unitArray.length;j++){
+				if(unitArray[j] != null){
+					//check for attack
+					if(!sameColor(unitArray[i],unitArray[j]) && unitArray[i].calculateDistance(unitArray[j]) < 5){
+						//kill
+						unitArray[j] = null;
+						let deadZone = {'x':unitArray[i].position.x, 'y':unitArray[i].position.y, 't':100};
+						battleGrounds.push(deadZone);
+						UNITS -= 1;
+						unitsInfo.innerHTML = UNITS;
+						unitsSlider.value = UNITS;
+					}
+				}
+			}
+		}
+	}
+	let temp = new Array();
+	while(unitArray.length != 0){
+		if(unitArray[0] == null){
+			unitArray.shift();
+		}
+		else{
+			temp.push(unitArray.shift());
+		}
+	}
+	unitArray = temp;
 }
 
 /*
@@ -336,6 +376,24 @@ function draw(){
 		ctx.lineTo(unitArray[i].position.x + unitArray[i].velocity.x + 5,unitArray[i].position.y + unitArray[i].velocity.y + 5);
 		ctx.strokeStyle = `rgb(0,0,0)`;
 		ctx.stroke();
+	}
+	let markerSize = 10;
+	for(let i=0;i<battleGrounds.length;i++){
+		let battleZone = battleGrounds.shift();
+		battleZone.t -= 1;
+		if(battleZone.t == 0){
+			
+		}
+		else{
+			ctx.beginPath();
+			ctx.moveTo(battleZone.x - markerSize,battleZone.y - markerSize);
+			ctx.lineTo(battleZone.x + markerSize,battleZone.y + markerSize);
+			ctx.moveTo(battleZone.x + markerSize,battleZone.y - markerSize);
+			ctx.lineTo(battleZone.x - markerSize,battleZone.y + markerSize);
+			ctx.strokeStyle = `rgba(255,0,0,0.5)`;
+			ctx.stroke();
+			battleGrounds.push(battleZone);
+		}
 	}
 }
 
@@ -418,14 +476,20 @@ function cohesion(currentPlane, planeArray){
 	for(let i=0;i<planeArray.length;i++){
 		if(planeArray[i] != currentPlane && currentPlane.calculateDistance(planeArray[i]) < VISIONDISTANCE){
 			if(colorBias){
-				//make decision based on color
-				if(sameColor(currentPlane, planeArray[i])){
-					//boids are the same
+				if(BATTLE){
 					cohVector = addVector(cohVector, planeArray[i].position);
 					boidsHit += 1;
 				}
 				else{
-					//boids are not the same
+					//make decision based on color
+					if(sameColor(currentPlane, planeArray[i])){
+						//boids are the same
+						cohVector = addVector(cohVector, planeArray[i].position);
+						boidsHit += 1;
+					}
+					else{
+						//boids are not the same
+					}
 				}
 			}
 			else{
@@ -454,9 +518,14 @@ function separation(currentPlane, planeArray){
 		if(planeArray[i] != currentPlane && currentPlane.calculateDistance(planeArray[i]) < VISIONDISTANCE){
 			if(colorBias){
 				if(!sameColor(currentPlane, planeArray[i])){
-					//strong aversion to different colors
-					let firstSub = subVector(planeArray[i].position,currentPlane.position);
-					sepVector = subVector(sepVector, multiplyVector(firstSub,(2 * (AVERSION/100))));
+					if(BATTLE){
+						//ignore seperation and go into each other
+					}
+					else{
+						//strong aversion to different colors
+						let firstSub = subVector(planeArray[i].position,currentPlane.position);
+						sepVector = subVector(sepVector, multiplyVector(firstSub,(2 * (AVERSION/100))));
+					}
 				}
 				else if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION){
 					//same color
