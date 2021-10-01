@@ -76,6 +76,7 @@ let battleButton = document.getElementById("battleToggle");
 	the slider inputs, which are directly below them
 */
 //boid constants
+let currentUnits = unitsSlider.value;
 let UNITS = unitsSlider.value;
 let SPEED = speedSlider.value;
 let RANDOMNESS = randomSlider.value;
@@ -131,23 +132,8 @@ speedSlider.oninput = function(){
 	speedInfo.innerHTML = this.value;
 }
 unitsSlider.oninput = function(){
-	let prev = UNITS;
 	UNITS = this.value;
 	unitsInfo.innerHTML = this.value;
-	if(prev < UNITS){
-		//units added
-		let diff = UNITS - prev
-		for(let i=0;i<diff;i++){
-			unitArray.push(new boid(FIELDX, FIELDY));
-		}
-	}
-	else if(prev > UNITS){
-		//units removed
-		let diff = prev - UNITS
-		for(let i=0;i<diff;i++){
-			unitArray.shift();
-		}
-	}
 }
 randomSlider.oninput = function(){
 	RANDOMNESS = this.value;
@@ -243,8 +229,18 @@ colorBiasButton.oninput = function(){
 	}
 	colorBias = !colorBias;
 }
+
 battleButton.oninput = function(){
 	BATTLE = !BATTLE;
+	if(BATTLE){
+		for(let i=0;i<unitArray.length;i++){
+			for(let j=0;j<unitArray.length;j++){
+				if(sameColor(unitArray[i],unitArray[j])){
+					unitArray[j].color = unitArray[i].color;
+				}
+			}
+		}
+	}
 }
 let battleGrounds = new Array();
 /*
@@ -272,6 +268,22 @@ async function doFrames() {
 			battle();
 		}
 		draw(unitArray);
+		if(currentUnits < UNITS){
+			//units added
+			let diff = UNITS - currentUnits
+			for(let i=0;i<diff;i++){
+				unitArray.push(new boid(FIELDX, FIELDY));
+				currentUnits++;
+			}
+		}
+		else if(currentUnits > UNITS){
+			//units removed
+			let diff = currentUnits - UNITS
+			for(let i=0;i<diff;i++){
+				unitArray.shift();
+				currentUnits--;
+			}
+		}
 	}, frames.speed);
 }
 
@@ -295,9 +307,10 @@ function battle(){
 					if(!sameColor(unitArray[i],unitArray[j]) && unitArray[i].calculateDistance(unitArray[j]) < 5){
 						//kill
 						unitArray[j] = null;
-						let deadZone = {'x':unitArray[i].position.x, 'y':unitArray[i].position.y, 't':100};
+						let deadZone = {'x':unitArray[i].position.x, 'y':unitArray[i].position.y, 't':50};
 						battleGrounds.push(deadZone);
 						UNITS -= 1;
+						currentUnits--;
 						unitsInfo.innerHTML = UNITS;
 						unitsSlider.value = UNITS;
 					}
@@ -314,7 +327,19 @@ function battle(){
 			temp.push(unitArray.shift());
 		}
 	}
+	shuffle(temp);
 	unitArray = temp;
+}
+
+function shuffle(arr){
+	let currentIndex = arr.length;
+	let randomIndex = -1;
+	while(currentIndex != 0){
+		randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex--;
+		[arr[currentIndex], arr[randomIndex]] = [arr[randomIndex], arr[currentIndex]];
+	}
+	return arr;
 }
 
 /*
@@ -377,22 +402,44 @@ function draw(){
 		ctx.strokeStyle = `rgb(0,0,0)`;
 		ctx.stroke();
 	}
-	let markerSize = 10;
-	for(let i=0;i<battleGrounds.length;i++){
-		let battleZone = battleGrounds.shift();
-		battleZone.t -= 1;
-		if(battleZone.t == 0){
-			
+	if(BATTLE){
+		let markerSize = 10;
+		ctx.lineWidth = 5;
+		let nextBattleGround = new Array();
+		while(battleGrounds.length != 0){
+			let battleZone = battleGrounds.shift();
+			battleZone.t -= 1;
+			if(battleZone.t == 0){
+				//do nothing
+			}
+			else{
+				ctx.beginPath();
+				ctx.moveTo(battleZone.x - markerSize,battleZone.y - markerSize);
+				ctx.lineTo(battleZone.x + markerSize,battleZone.y + markerSize);
+				ctx.moveTo(battleZone.x + markerSize,battleZone.y - markerSize);
+				ctx.lineTo(battleZone.x - markerSize,battleZone.y + markerSize);
+				ctx.strokeStyle = `rgba(255,0,0,0.5)`;
+				ctx.stroke();
+				//add to back of queue
+				nextBattleGround.push(battleZone);
+			}
 		}
-		else{
-			ctx.beginPath();
-			ctx.moveTo(battleZone.x - markerSize,battleZone.y - markerSize);
-			ctx.lineTo(battleZone.x + markerSize,battleZone.y + markerSize);
-			ctx.moveTo(battleZone.x + markerSize,battleZone.y - markerSize);
-			ctx.lineTo(battleZone.x - markerSize,battleZone.y + markerSize);
-			ctx.strokeStyle = `rgba(255,0,0,0.5)`;
-			ctx.stroke();
-			battleGrounds.push(battleZone);
+		battleGrounds = nextBattleGround;
+		ctx.lineWidth = 1;
+		let winner = true;
+		for(let b=0;b<unitArray.length;b++){
+			for(let bb=0;bb<unitArray.length;bb++){
+				if(!sameColor(unitArray[b],unitArray[bb])){
+					winner = false;
+				}
+			}
+			if(!winner){
+				break;
+			}
+		}
+		if(winner){
+			ctx.font = `48px Tahoma`;
+			ctx.fillText('WINNER', (FIELDX/2)-91, 50)
 		}
 	}
 }
