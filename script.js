@@ -582,11 +582,14 @@ function cohesion(currentPlane, planeArray){
 	}
 	else{
 		//no one around to find
-		/*
-			what this does is that when a boid is alone, it despreatly tries to find
-			a partner to fly with by going as fast as possible in its current direction
-		*/
-		return currentPlane.velocity;
+		if(goingToDesired){
+			//go to flag
+			return cohVector;
+		}
+		else{
+			//fly aimlessly
+			return currentPlane.velocity;
+		}
 	}
 }
 /*
