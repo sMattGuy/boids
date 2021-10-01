@@ -233,10 +233,11 @@ colorBiasButton.oninput = function(){
 	}
 	colorBias = !colorBias;
 }
-
+let initialUnits = 0;
 battleButton.oninput = function(){
 	BATTLE = !BATTLE;
 	if(BATTLE){
+		initialUnits = UNITS;
 		for(let i=0;i<unitArray.length;i++){
 			for(let j=0;j<unitArray.length;j++){
 				if(sameColor(unitArray[i],unitArray[j])){
@@ -350,6 +351,20 @@ function battle(){
 	}
 	shuffle(temp);
 	unitArray = temp;
+	/*
+		We want to shrink the field size as the number of units goes down
+	*/
+	//bounds controls how close we are to the center, increasing it makes the play area smaller
+	//we can record how many units we start with, then how many remain
+	// initialUnits / UNITS = scale for how many units remain compared to when we started
+
+	let leftScale = initialUnits / UNITS;
+	leftScale = leftScale * 1.5;
+	let newBounds = BOUNDS + (BOUNDS * leftScale);
+	XMIN = newBounds;
+	XMAX = FIELDX - newBounds;
+	YMIN = newBounds;
+	YMAX = FIELDY - newBounds;
 }
 
 function shuffle(arr){
