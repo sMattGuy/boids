@@ -574,10 +574,20 @@ function cohesion(currentPlane, planeArray){
 			}
 		}
 	}
-	cohVector = divideVector(cohVector, boidsHit);
-	let result = subVector(cohVector, currentPlane.position);
-	result = divideVector(result, 100);
-	return result;
+	if(boidsHit != 0){
+		cohVector = divideVector(cohVector, boidsHit);
+		let result = subVector(cohVector, currentPlane.position);
+		result = divideVector(result, 100);
+		return result;
+	}
+	else{
+		//no one around to find
+		/*
+			what this does is that when a boid is alone, it despreatly tries to find
+			a partner to fly with by going as fast as possible in its current direction
+		*/
+		return currentPlane.velocity;
+	}
 }
 /*
 	rule 2: seperation
