@@ -609,8 +609,11 @@ function separation(currentPlane, planeArray){
 					}
 					else{
 						//strong aversion to different colors
-						let firstSub = subVector(planeArray[i].position,currentPlane.position);
-						sepVector = subVector(sepVector, multiplyVector(firstSub,(2 * (AVERSION/100))));
+						if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION*2){
+							let firstSub = subVector(planeArray[i].position,currentPlane.position);
+							sepVector = subVector(sepVector, firstSub);
+							sepVector = multiplyVector(sepVector,(2 * (AVERSION/100)));
+						}
 					}
 				}
 				else if(currentPlane.calculateDistance(planeArray[i]) < SEPERATION){
