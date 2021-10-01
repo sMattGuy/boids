@@ -76,15 +76,15 @@ let battleButton = document.getElementById("battleToggle");
 	the slider inputs, which are directly below them
 */
 //boid constants
-let currentUnits = unitsSlider.value;
-let UNITS = unitsSlider.value;
-let SPEED = speedSlider.value;
-let RANDOMNESS = randomSlider.value;
-let VISIONDISTANCE = visionSlider.value;
-let SEPERATION = seperationSlider.value;
-let BOUNDS = boundSlider.value;
-let SEPINTENSITY = sepIntSlider.value;
-let AVERSION = aversionSlider.value;
+let currentUnits = parseInt(unitsSlider.value);
+let UNITS = parseInt(unitsSlider.value);
+let SPEED = parseInt(speedSlider.value);
+let RANDOMNESS = parseInt(randomSlider.value);
+let VISIONDISTANCE = parseInt(visionSlider.value);
+let SEPERATION = parseInt(seperationSlider.value);
+let BOUNDS = parseInt(boundSlider.value);
+let SEPINTENSITY = parseInt(sepIntSlider.value);
+let AVERSION = parseInt(aversionSlider.value);
 let BATTLE = false;
 //canvas constants
 let FIELDX = canvas.width;
@@ -128,36 +128,36 @@ let colorBias = false;
 */
 //boid sliders
 speedSlider.oninput = function(){
-	SPEED = this.value;
+	SPEED = parseInt(this.value);
 	speedInfo.innerHTML = this.value;
 }
 unitsSlider.oninput = function(){
-	UNITS = this.value;
+	UNITS = parseInt(this.value);
 	unitsInfo.innerHTML = this.value;
 }
 randomSlider.oninput = function(){
-	RANDOMNESS = this.value;
+	RANDOMNESS = parseInt(this.value);
 	randomInfo.innerHTML = this.value;
 }
 visionSlider.oninput = function(){
-	VISIONDISTANCE = this.value;
+	VISIONDISTANCE = parseInt(this.value);
 	visionInfo.innerHTML = this.value;
 }
 seperationSlider.oninput = function(){
-	SEPERATION = this.value;
+	SEPERATION = parseInt(this.value);
 	seperationInfo.innerHTML = this.value;
 }
 sepIntSlider.oninput = function(){
-	SEPINTENSITY = this.value;
+	SEPINTENSITY = parseInt(this.value);
 	sepIntInfo.innerHTML = this.value;
 }
 aversionSlider.oninput = function(){
-	AVERSION = this.value;
+	AVERSION = parseInt(this.value);
 	aversionInfo.innerHTML = this.value;
 }
 //area sliders
 boundSlider.oninput = function(){
-	BOUNDS = this.value;
+	BOUNDS = parseInt(this.value);
 	boundInfo.innerHTML = this.value;
 	XMIN = BOUNDS;
 	XMAX = FIELDX - BOUNDS;
@@ -165,25 +165,25 @@ boundSlider.oninput = function(){
 	YMAX = FIELDY - BOUNDS;
 }
 windSlider.oninput = function(){
-	windAngle = this.value;
+	windAngle = parseInt(this.value);
 	windInfo.innerHTML = this.value;
 	induceWind();
 }
 windSpeedSlider.oninput = function(){
-	windSpeed = this.value;
+	windSpeed = parseInt(this.value);
 	windSpeedInfo.innerHTML = this.value;
 	induceWind();
 }
 //canvas sliders
 widthSlider.oninput = function(){
-	FIELDX = this.value;
+	FIELDX = parseInt(this.value);
 	canvas.width = this.value;
 	widthInfo.innerHTML = this.value;
 	XMIN = BOUNDS;
 	XMAX = FIELDX - BOUNDS;
 }
 heightSlider.oninput = function(){
-	FIELDY = this.value;
+	FIELDY = parseInt(this.value);
 	canvas.height = this.value;
 	heightInfo.innerHTML = this.value;
 	YMIN = BOUNDS;
