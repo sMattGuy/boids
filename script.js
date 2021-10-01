@@ -69,7 +69,11 @@ let locationButton = document.getElementById("goToLocation");
 let windButton = document.getElementById("windActivate");
 let colorBiasButton = document.getElementById("colorBias");
 let battleButton = document.getElementById("battleToggle");
-
+//view buttons
+let viewSphereButton = document.getElementById("viewSphere");
+let sepSphereButton = document.getElementById("sepSphere");
+let velLineButton = document.getElementById("velLine");
+let boarderButton = document.getElementById("boarder");
 //constants
 /*
 	all constants are delcared here so that we can modify them with
@@ -243,6 +247,23 @@ battleButton.oninput = function(){
 	}
 }
 let battleGrounds = new Array();
+//view buttons
+let viewSphere = true;
+let sepSphere = true;
+let velLine = true;
+let boarderView = true;
+viewSphereButton.oninput = function(){
+	viewSphere = !viewSphere;
+}
+sepSphereButton.oninput = function(){
+	sepSphere = !sepSphere;
+}
+velLineButton.oninput = function(){
+	velLine = !velLine;
+}
+boarderButton.oninput = function(){
+	boarderView = !boarderView;
+}
 /*
 	frame setup, this prevents the boids from just going as fast
 	as possible. only have this bc of turan showing me how.
@@ -350,15 +371,17 @@ function draw(){
 	ctx.fillStyle = '#eee';
 	ctx.fillRect(0,0,FIELDX,FIELDY);
 	//draw bounding limit
-	ctx.fillStyle = 'rgba(255,0,0,0.05)';
-	//left bound
-	ctx.fillRect(0,0,XMIN,YMAX);
-	//upper
-	ctx.fillRect(XMIN,0,FIELDX,YMIN);
-	//right
-	ctx.fillRect(XMAX,YMIN,FIELDX,FIELDY);
-	//lower
-	ctx.fillRect(0,YMAX,XMAX,FIELDY);
+	if(boarderView){
+		ctx.fillStyle = 'rgba(255,0,0,0.05)';
+		//left bound
+		ctx.fillRect(0,0,XMIN,YMAX);
+		//upper
+		ctx.fillRect(XMIN,0,FIELDX,YMIN);
+		//right
+		ctx.fillRect(XMAX,YMIN,FIELDX,FIELDY);
+		//lower
+		ctx.fillRect(0,YMAX,XMAX,FIELDY);
+	}
 	//draw wind
 	if(windToggle){
 		for(let i=0;i<FIELDX/50;i++){
@@ -383,24 +406,30 @@ function draw(){
 	//draw units, their vision, and movement 
 	for(let i=0;i<unitArray.length;i++){
 		//draw seperation radius
-		ctx.beginPath();
-		ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, SEPERATION, 0, 2*Math.PI, false);
-		ctx.fillStyle = `rgba(255,0,0,${SEPINTENSITY/100})`;
-		ctx.fill();
+		if(sepSphere){
+			ctx.beginPath();
+			ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, SEPERATION, 0, 2*Math.PI, false);
+			ctx.fillStyle = `rgba(255,0,0,${SEPINTENSITY/100})`;
+			ctx.fill();
+		}
 		//draw vision radius
-		ctx.beginPath();
-		ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, VISIONDISTANCE, 0, 2*Math.PI, false);
-		ctx.fillStyle = `rgba(10,10,10,0.05)`;
-		ctx.fill();
+		if(viewSphere){
+			ctx.beginPath();
+			ctx.arc(unitArray[i].position.x + 5,unitArray[i].position.y + 5, VISIONDISTANCE, 0, 2*Math.PI, false);
+			ctx.fillStyle = `rgba(10,10,10,0.05)`;
+			ctx.fill();
+		}
 		//draw plane 
 		ctx.fillStyle = `rgb(${unitArray[i].color.r},${unitArray[i].color.g},${unitArray[i].color.b})`;
 		ctx.fillRect(unitArray[i].position.x,unitArray[i].position.y,10,10);
 		//draw velocity line
-		ctx.beginPath();
-		ctx.moveTo(unitArray[i].position.x + 5,unitArray[i].position.y + 5);
-		ctx.lineTo(unitArray[i].position.x + unitArray[i].velocity.x + 5,unitArray[i].position.y + unitArray[i].velocity.y + 5);
-		ctx.strokeStyle = `rgb(0,0,0)`;
-		ctx.stroke();
+		if(velLine){
+			ctx.beginPath();
+			ctx.moveTo(unitArray[i].position.x + 5,unitArray[i].position.y + 5);
+			ctx.lineTo(unitArray[i].position.x + unitArray[i].velocity.x + 5,unitArray[i].position.y + unitArray[i].velocity.y + 5);
+			ctx.strokeStyle = `rgb(0,0,0)`;
+			ctx.stroke();
+		}
 	}
 	if(BATTLE){
 		let markerSize = 10;

@@ -15,11 +15,11 @@
 				<p>Units: <span id="unitDisplay"></span></p>
 				<input type="range" min="0" max="100" value="5" id="maxUnits">
 				<p>Randomness: <span id="randomDisplay"></span></p>
-				<input type="range" min="0" max="100" value="2" id="maxRandom">
+				<input type="range" min="0" max="100" value="1" id="maxRandom">
 				<p>Vision: <span id="visionDisplay"></span></p>
-				<input type="range" min="0" max="500" value="50" id="maxVision">
+				<input type="range" min="0" max="500" value="75" id="maxVision">
 				<p>Seperation: <span id="seperationDisplay"></span></p>
-				<input type="range" min="0" max="100" value="20" id="maxSeperation">
+				<input type="range" min="0" max="100" value="10" id="maxSeperation">
 				<p>Sep. Int.: <span id="sepIntDisplay"></span>%</p>
 				<input type="range" min="1" max="100" value="20" id="maxSepInt">
 				<p>Color Grouping?</p>
@@ -54,6 +54,18 @@
 				<input type="range" min="100" max="1600" value="500" id="maxWidth">
 				<p>Canvas Height: <span id="heightDisplay"></span></p>
 				<input type="range" min="100" max="900" value="500" id="maxHeight">
+			</div>
+			
+			<p>View Settings</p>
+			<div class="sliders">
+				<p>View Sphere?</p>
+				<input type="checkbox" id="viewSphere" name="viewSphere" value="true" checked>
+				<p>Separation Sphere?</p>
+				<input type="checkbox" id="sepSphere" name="sepSphere" value="true" checked>
+				<p>Vel. Line?</p>
+				<input type="checkbox" id="velLine" name="velLine" value="true" checked>
+				<p>Boarder view?</p>
+				<input type="checkbox" id="boarder" name="boarder" value="true" checked>
 			</div>
 		<script src="./script.js" onload="init()"></script>
 	</body>
