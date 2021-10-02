@@ -359,12 +359,19 @@ function battle(){
 	// initialUnits / UNITS = scale for how many units remain compared to when we started
 
 	let leftScale = initialUnits / UNITS;
-	leftScale = leftScale * 1.5;
 	let newBounds = BOUNDS + (BOUNDS * leftScale);
-	XMIN = newBounds;
-	XMAX = FIELDX - newBounds;
-	YMIN = newBounds;
-	YMAX = FIELDY - newBounds;
+	let xBounds = newBounds;
+	if(xBounds > (FIELDX/2) - 100){
+		xBounds = (FIELDX/2) - 100;
+	}
+	XMIN = xBounds;
+	XMAX = FIELDX - xBounds;
+	let yBounds = newBounds;
+	if(yBounds > (FIELDY/2) - 100){
+		yBounds = (FIELDY/2) - 100;
+	}
+	YMIN = yBounds;
+	YMAX = FIELDY - yBounds;
 }
 
 function shuffle(arr){
