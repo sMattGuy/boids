@@ -74,6 +74,8 @@ let viewSphereButton = document.getElementById("viewSphere");
 let sepSphereButton = document.getElementById("sepSphere");
 let velLineButton = document.getElementById("velLine");
 let boarderButton = document.getElementById("boarder");
+//drawing
+let drawButton = document.getElementById("draw");
 //constants
 /*
 	all constants are delcared here so that we can modify them with
@@ -108,11 +110,65 @@ let YMAX = FIELDY - BOUNDS;
 let desiredX = FIELDX / 2;
 let desiredY = FIELDY / 2;
 let goingToDesired = false;
+
+let clearButton = document.getElementById("drawClear");
+
+//variables for drawing obsticles
+let mouseDown = false;
+let drawing = false;
+let prevX = 0;
+let prevY = 0;
+let currX = 0;
+let currY = 0;
+let drawArray = new Array(FIELDX);
+drawButton.oninput = function(){
+	drawing = !drawing;
+}
+clearButton.onclick = function(){
+	for(let i=0;i<FIELDX;i++){
+		for(let j=0;j<FIELDY;j++){
+			drawArray[i][j] = 0;
+		}
+	}
+};
+canvas.addEventListener('mousemove', e => {
+	//main drawing code
+	if(mouseDown && drawing){
+		let minXPos = e.offsetX - 5;
+		if(minXPos < 0){
+			minXPos = 0;
+		}
+		let minYPos = e.offsetY - 5;
+		if(minYPos < 0){
+			minYPos = 0;
+		}
+		let maxXPos = e.offsetX + 5;
+		if(maxXPos >= FIELDX){
+			maxXPos = FIELDX - 1;
+		}
+		let maxYPos = e.offsetY + 5;
+		if(maxYPos >= FIELDY){
+			maxYPos = FIELDY - 1;
+		}
+		for(let j=minXPos;j<maxXPos; j++){
+			for(let k=minYPos;k<maxYPos; k++){
+				drawArray[j][k] = 1;
+			}
+		}
+	}
+});
+canvas.addEventListener('mouseup', e => {
+	mouseDown = false;
+});
 //canvas listen to get X and Y of mouse click to place flag
 canvas.addEventListener('mousedown', e => {
-	desiredX = e.offsetX;
-	desiredY = e.offsetY;
+	if(goingToDesired){
+		desiredX = e.offsetX;
+		desiredY = e.offsetY;
+	}
+	mouseDown = true;
 });
+//drawing obsticles 
 
 //wind variables
 /*
@@ -185,6 +241,12 @@ widthSlider.oninput = function(){
 	widthInfo.innerHTML = this.value;
 	XMIN = BOUNDS;
 	XMAX = FIELDX - BOUNDS;
+	for(let i=0;i<FIELDX;i++){
+		drawArray[i] = new Array(FIELDY);
+		for(let j=0;j<FIELDY;j++){
+			drawArray[i][j] = 0;
+		}
+	}
 }
 heightSlider.oninput = function(){
 	FIELDY = parseInt(this.value);
@@ -192,6 +254,12 @@ heightSlider.oninput = function(){
 	heightInfo.innerHTML = this.value;
 	YMIN = BOUNDS;
 	YMAX = FIELDY - BOUNDS;
+	for(let i=0;i<FIELDX;i++){
+		drawArray[i] = new Array(FIELDY);
+		for(let j=0;j<FIELDY;j++){
+			drawArray[i][j] = 0;
+		}
+	}
 }
 /*
 	button listening, same as above, but just for toggle buttons
@@ -316,6 +384,12 @@ async function doFrames() {
 function init(){
 	for(let i=0;i<UNITS;i++){
 		unitArray.push(new boid(FIELDX, FIELDY));
+	}
+	for(let i=0;i<FIELDX;i++){
+		drawArray[i] = new Array(FIELDY);
+		for(let j=0;j<FIELDY;j++){
+			drawArray[i][j] = 0;
+		}
 	}
 	doFrames();
 }
@@ -453,6 +527,18 @@ function draw(){
 			ctx.stroke();
 		}
 	}
+	//draw obsticles
+	for(let i=0;i<FIELDX;i++){
+		for(let j=0;j<FIELDY;j++){
+			if(drawArray[i][j] == 1){
+				//draw block
+				ctx.beginPath();
+				ctx.arc(i,j,1,0,2*Math.PI,false);
+				ctx.fillStyle = "black";
+				ctx.fill();
+			}
+		}
+	}
 	if(BATTLE){
 		let markerSize = 10;
 		ctx.lineWidth = 5;
@@ -558,6 +644,41 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 		planeArray[i].position = addVector(planeArray[i].position, planeArray[i].velocity);
 		//edit their position based on if theyre leaving the bounds
 		boundPosition(planeArray[i]);
+		//boids dodge drawn obsticle
+		let obHit = false;
+		if(drawing){
+			let minXPos = Math.floor(planeArray[i].position.x);
+			if(minXPos < 0){
+				minXPos = 0;
+			}
+			let minYPos = Math.floor(planeArray[i].position.y);
+			if(minYPos < 0){
+				minYPos = 0;
+			}
+			let maxXPos = Math.floor(planeArray[i].position.x) + 5;
+			if(maxXPos >= FIELDX){
+				maxXPos = FIELDX - 1;
+			}
+			let maxYPos = Math.floor(planeArray[i].position.y) + 5;
+			if(maxYPos >= FIELDY){
+				maxYPos = FIELDY - 1;
+			}
+			for(let j=minXPos;j<maxXPos; j++){
+				for(let k=minYPos;k<maxYPos; k++){
+					if(drawArray[j][k] == 1){
+						//hit wall
+						obHit = true;
+						//dodge wall
+						planeArray[i].velocity.x = planeArray[i].velocity.x * -1;
+						planeArray[i].velocity.y = planeArray[i].velocity.y * -1;
+						break;
+					}
+				}
+				if(obHit){
+					break;
+				}
+			}
+		}
 	}
 }
 /*
