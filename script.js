@@ -1,25 +1,4 @@
-/*
-	the container for all the units, pretty much holds
-	all the boids. without it, nothing exists
-*/
-let unitArray = new Array();
-//canvas setup
-/*
-	this defines everything needed to get canvas started
-	the flag is what is shown when a user is making the 
-	boids go to a specific target (the tiny image);
-*/
-let canvas = document.getElementById("myCanvas");
-let ctx = canvas.getContext("2d");
-let flag = new Image();
-flag.src = "./flag.png";
-
-//sliders
-/*
-	this is every slider in the index, it is seperated
-	by the category of the sliders (boid, area, canvas, etc)
-	as new sliders are added, they are to be init. here
-*/
+//DOM cache
 //boid modifiers
 let speedSlider = document.getElementById("maxSpeed");
 let speedInfo = document.getElementById("speedDisplay");
@@ -59,12 +38,10 @@ widthInfo.innerHTML = widthSlider.value;
 let heightSlider = document.getElementById("maxHeight");
 let heightInfo = document.getElementById("heightDisplay");
 heightInfo.innerHTML = heightSlider.value;
-
+//drawing
+let tileSizeSlider = document.getElementById("tilesizeSlider");
+let tileSizeDisplay = document.getElementById("tilesize");
 //buttons
-/*
-	here are the toggle buttons for the index
-	these are designed to just toggle other features
-*/
 let locationButton = document.getElementById("goToLocation");
 let windButton = document.getElementById("windActivate");
 let colorBiasButton = document.getElementById("colorBias");
@@ -76,6 +53,25 @@ let velLineButton = document.getElementById("velLine");
 let boarderButton = document.getElementById("boarder");
 //drawing
 let drawButton = document.getElementById("draw");
+let gridButton = document.getElementById("grid");
+let clearButton = document.getElementById("drawClear");
+let canvas = document.getElementById("myCanvas");
+/*
+	the container for all the units, pretty much holds
+	all the boids. without it, nothing exists
+*/
+let unitArray = new Array();
+//canvas setup
+/*
+	this defines everything needed to get canvas started
+	the flag is what is shown when a user is making the 
+	boids go to a specific target (the tiny image);
+*/
+
+let ctx = canvas.getContext("2d");
+let flag = new Image();
+flag.src = "./flag.png";
+
 //constants
 /*
 	all constants are delcared here so that we can modify them with
@@ -110,55 +106,44 @@ let YMAX = FIELDY - BOUNDS;
 let desiredX = FIELDX / 2;
 let desiredY = FIELDY / 2;
 let goingToDesired = false;
+let tileSize = parseInt(tileSizeSlider.value);
 
-let clearButton = document.getElementById("drawClear");
 
 //variables for drawing obsticles
 let mouseDown = false;
 let drawing = false;
-let prevX = 0;
-let prevY = 0;
-let currX = 0;
-let currY = 0;
-let drawArray = new Array(FIELDX);
+let drawArray = new Array(FIELDX/tileSize);
 drawButton.oninput = function(){
 	drawing = !drawing;
 }
 clearButton.onclick = function(){
-	for(let i=0;i<FIELDX;i++){
-		for(let j=0;j<FIELDY;j++){
+	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
 			drawArray[i][j] = 0;
 		}
 	}
 };
+let moveDrawing = false;
+let removeDrawing = false;
 canvas.addEventListener('mousemove', e => {
 	//main drawing code
 	if(mouseDown && drawing){
-		let minXPos = e.offsetX - 5;
-		if(minXPos < 0){
-			minXPos = 0;
+		//drawing new tiles
+		if(!removeDrawing && (drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] == 1 || moveDrawing)){
+			moveDrawing = true;
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 1;
 		}
-		let minYPos = e.offsetY - 5;
-		if(minYPos < 0){
-			minYPos = 0;
-		}
-		let maxXPos = e.offsetX + 5;
-		if(maxXPos >= FIELDX){
-			maxXPos = FIELDX - 1;
-		}
-		let maxYPos = e.offsetY + 5;
-		if(maxYPos >= FIELDY){
-			maxYPos = FIELDY - 1;
-		}
-		for(let j=minXPos;j<maxXPos; j++){
-			for(let k=minYPos;k<maxYPos; k++){
-				drawArray[j][k] = 1;
-			}
+		//removing old tiles
+		else if(!moveDrawing){
+			removeDrawing = true;
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 0;
 		}
 	}
 });
 canvas.addEventListener('mouseup', e => {
 	mouseDown = false;
+	moveDrawing = false;
+	removeDrawing = false;
 });
 //canvas listen to get X and Y of mouse click to place flag
 canvas.addEventListener('mousedown', e => {
@@ -167,9 +152,17 @@ canvas.addEventListener('mousedown', e => {
 		desiredY = e.offsetY;
 	}
 	mouseDown = true;
+	if(drawing){
+		if(drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] == 1){
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 0;
+		}
+		else{
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 1;
+		}
+	}
 });
 //drawing obsticles 
-
+tileSizeDisplay.innerHTML = tileSizeSlider.value;
 //wind variables
 /*
 	these variables are all for wind. wind vector is whats applied to
@@ -234,6 +227,21 @@ windSpeedSlider.oninput = function(){
 	windSpeedInfo.innerHTML = this.value;
 	induceWind();
 }
+//drawing
+tileSizeSlider.oninput = function(){
+	tileSize = parseInt(this.value);
+	tileSizeDisplay.innerHTML = this.value;
+	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
+		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
+			drawArray[i][j] = 0;
+		}
+	}
+}
+let drawGrid = false;
+gridButton.oninput = function(){
+	drawGrid = !drawGrid;
+}
 //canvas sliders
 widthSlider.oninput = function(){
 	FIELDX = parseInt(this.value);
@@ -241,9 +249,9 @@ widthSlider.oninput = function(){
 	widthInfo.innerHTML = this.value;
 	XMIN = BOUNDS;
 	XMAX = FIELDX - BOUNDS;
-	for(let i=0;i<FIELDX;i++){
-		drawArray[i] = new Array(FIELDY);
-		for(let j=0;j<FIELDY;j++){
+	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
+		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
 			drawArray[i][j] = 0;
 		}
 	}
@@ -254,9 +262,9 @@ heightSlider.oninput = function(){
 	heightInfo.innerHTML = this.value;
 	YMIN = BOUNDS;
 	YMAX = FIELDY - BOUNDS;
-	for(let i=0;i<FIELDX;i++){
-		drawArray[i] = new Array(FIELDY);
-		for(let j=0;j<FIELDY;j++){
+	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
+		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
 			drawArray[i][j] = 0;
 		}
 	}
@@ -385,9 +393,9 @@ function init(){
 	for(let i=0;i<UNITS;i++){
 		unitArray.push(new boid(FIELDX, FIELDY));
 	}
-	for(let i=0;i<FIELDX;i++){
-		drawArray[i] = new Array(FIELDY);
-		for(let j=0;j<FIELDY;j++){
+	for(let i=0;i<Math.floor(FIELDX/10);i++){
+		drawArray[i] = new Array(Math.floor(FIELDY/10));
+		for(let j=0;j<Math.floor(FIELDY/10);j++){
 			drawArray[i][j] = 0;
 		}
 	}
@@ -466,6 +474,17 @@ function shuffle(arr){
 function draw(){
 	ctx.fillStyle = '#eee';
 	ctx.fillRect(0,0,FIELDX,FIELDY);
+	if(drawGrid){
+		ctx.strokeStyle = 'rgba(25,25,25,0.03)';
+		//draw grid lines for drawing
+		for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+			for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
+				ctx.beginPath();
+				ctx.rect(i*tileSize,j*tileSize,tileSize,tileSize);
+				ctx.stroke();
+			}
+		}
+	}
 	//draw bounding limit
 	if(boarderView){
 		ctx.fillStyle = 'rgba(255,0,0,0.05)';
@@ -527,18 +546,6 @@ function draw(){
 			ctx.stroke();
 		}
 	}
-	//draw obsticles
-	for(let i=0;i<FIELDX;i++){
-		for(let j=0;j<FIELDY;j++){
-			if(drawArray[i][j] == 1){
-				//draw block
-				ctx.beginPath();
-				ctx.arc(i,j,1,0,2*Math.PI,false);
-				ctx.fillStyle = "black";
-				ctx.fill();
-			}
-		}
-	}
 	if(BATTLE){
 		let markerSize = 10;
 		ctx.lineWidth = 5;
@@ -577,6 +584,16 @@ function draw(){
 		if(winner){
 			ctx.font = `48px Tahoma`;
 			ctx.fillText('WINNER', (FIELDX/2)-91, 50)
+		}
+	}
+	//draw obsticles
+	ctx.fillStyle = "black";
+	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
+			if(drawArray[i][j] == 1){
+				//draw block
+				ctx.fillRect(i*tileSize,j*tileSize,tileSize,tileSize);
+			}
 		}
 	}
 }
@@ -646,6 +663,7 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 		boundPosition(planeArray[i]);
 		//boids dodge drawn obsticle
 		let obHit = false;
+		/*
 		if(drawing){
 			let minXPos = Math.floor(planeArray[i].position.x);
 			if(minXPos < 0){
@@ -679,6 +697,7 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 				}
 			}
 		}
+		*/
 	}
 }
 /*
