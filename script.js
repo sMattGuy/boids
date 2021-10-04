@@ -55,6 +55,7 @@ let boarderButton = document.getElementById("boarder");
 let drawButton = document.getElementById("draw");
 let gridButton = document.getElementById("grid");
 let clearButton = document.getElementById("drawClear");
+let edgeButton = document.getElementById("edge");
 let canvas = document.getElementById("myCanvas");
 /*
 	the container for all the units, pretty much holds
@@ -88,6 +89,7 @@ let BOUNDS = parseInt(boundSlider.value);
 let SEPINTENSITY = parseInt(sepIntSlider.value);
 let AVERSION = parseInt(aversionSlider.value);
 let BATTLE = false;
+let showEdges = false;
 //canvas constants
 let FIELDX = canvas.width;
 let FIELDY = canvas.height;
@@ -299,6 +301,9 @@ windButton.oninput = function(){
 }
 locationButton.oninput = function(){
 	goingToDesired = !goingToDesired;
+}
+edgeButton.oninput = function(){
+	showEdges = !showEdges;
 }
 colorBiasButton.oninput = function(){
 	//show elements 
@@ -605,20 +610,22 @@ function draw(){
 		}
 	}
 	//temp code to visulize edge map
-	for(let i=0;i<edgeMap.length;i++){
-		ctx.beginPath();
-		ctx.arc(edgeMap[i].startX * tileSize,edgeMap[i].startY * tileSize, 5, 0, 2*Math.PI, false);
-		ctx.fillStyle = `rgb(255,0,0)`;
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(edgeMap[i].endX * tileSize,edgeMap[i].endY * tileSize, 5, 0, 2*Math.PI, false);
-		ctx.fillStyle = `rgb(255,0,0)`;
-		ctx.fill();
-		ctx.beginPath();
-		ctx.moveTo(edgeMap[i].startX * tileSize,edgeMap[i].startY * tileSize);
-		ctx.lineTo(edgeMap[i].endX * tileSize,edgeMap[i].endY * tileSize);
-		ctx.strokeStyle = "red";
-		ctx.stroke();
+	if(showEdges){
+		for(let i=0;i<edgeMap.length;i++){
+			ctx.beginPath();
+			ctx.arc(edgeMap[i].startX * tileSize,edgeMap[i].startY * tileSize, 5, 0, 2*Math.PI, false);
+			ctx.fillStyle = `rgb(255,0,0)`;
+			ctx.fill();
+			ctx.beginPath();
+			ctx.arc(edgeMap[i].endX * tileSize,edgeMap[i].endY * tileSize, 5, 0, 2*Math.PI, false);
+			ctx.fillStyle = `rgb(255,0,0)`;
+			ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(edgeMap[i].startX * tileSize,edgeMap[i].startY * tileSize);
+			ctx.lineTo(edgeMap[i].endX * tileSize,edgeMap[i].endY * tileSize);
+			ctx.strokeStyle = "red";
+			ctx.stroke();
+		}
 	}
 }
 
