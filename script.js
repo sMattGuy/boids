@@ -636,6 +636,7 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 	let v3 = {'x':0,'y':0};
 	let totalVector = {};
 	for(let i=0;i<planeArray.length;i++){
+		let prevPosition = planeArray[i].position;
 		//wind, boids cannot control their speed in wind and are pushed first
 		if(windToggle){
 			planeArray[i].position = addVector(planeArray[i].position, windVector);
@@ -661,43 +662,34 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 		planeArray[i].position = addVector(planeArray[i].position, planeArray[i].velocity);
 		//edit their position based on if theyre leaving the bounds
 		boundPosition(planeArray[i]);
+		
 		//boids dodge drawn obsticle
-		let obHit = false;
-		/*
-		if(drawing){
-			let minXPos = Math.floor(planeArray[i].position.x);
-			if(minXPos < 0){
-				minXPos = 0;
-			}
-			let minYPos = Math.floor(planeArray[i].position.y);
-			if(minYPos < 0){
-				minYPos = 0;
-			}
-			let maxXPos = Math.floor(planeArray[i].position.x) + 5;
-			if(maxXPos >= FIELDX){
-				maxXPos = FIELDX - 1;
-			}
-			let maxYPos = Math.floor(planeArray[i].position.y) + 5;
-			if(maxYPos >= FIELDY){
-				maxYPos = FIELDY - 1;
-			}
-			for(let j=minXPos;j<maxXPos; j++){
-				for(let k=minYPos;k<maxYPos; k++){
-					if(drawArray[j][k] == 1){
-						//hit wall
-						obHit = true;
-						//dodge wall
-						planeArray[i].velocity.x = planeArray[i].velocity.x * -1;
-						planeArray[i].velocity.y = planeArray[i].velocity.y * -1;
-						break;
-					}
-				}
-				if(obHit){
-					break;
-				}
-			}
+		let obsXBound = Math.floor(planeArray[i].position.x/tileSize);
+		let obsYBound = Math.floor(planeArray[i].position.y/tileSize);
+		if(obsXBound >= drawArray.length - 1){
+			obsXBound = drawArray.length - 1;
 		}
-		*/
+		if(obsXBound < 0){
+			obsXBound = 0;
+		}
+		if(obsYBound >= drawArray[0].length - 1){
+			obsYBound = drawArray[0].length - 1;
+		}
+		if(obsYBound < 0){
+			obsYBound = 0;
+		}
+		if(drawArray[obsXBound][obsYBound] == 1){
+			//dodge wall
+			let xDiff = planeArray[i].position.x - prevPosition.x;
+			let yDiff = planeArray[i].position.y - prevPosition.y;
+			const DODGE = 5;
+			
+			//crude version, just tries turning the boids a way, matching velocity would be better
+			planeArray[i].velocity.x += DODGE;
+			planeArray[i].velocity.y += DODGE;
+			
+			planeArray.position = prevPosition;
+		}
 	}
 }
 /*
