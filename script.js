@@ -166,26 +166,8 @@ canvas.addEventListener('mousedown', e => {
 		}
 	}
 });
+
 let edgeMap = new Array();
-/*
-	edgeMap
-	[
-		{
-			startX:0
-			startY:0
-			endX:0
-			endY:0
-		}
-	]
-*/
-//edges
-/*
-	{
-		'exists':0,						0 means false, 1 means true
-		'edgeExists':[0,0,0,0],		order: NSEW, 0 false, 1 true
-		'edgeID':[-1,-1,-1,-1]		order: NSEW, constains numerical ID
-	}
-*/
 
 //drawing obsticles 
 tileSizeDisplay.innerHTML = tileSizeSlider.value;
