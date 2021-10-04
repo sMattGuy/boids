@@ -117,9 +117,10 @@ drawButton.oninput = function(){
 	drawing = !drawing;
 }
 clearButton.onclick = function(){
+	edgeMap = new Array();
 	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
 		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
-			drawArray[i][j] = 0;
+			drawArray[i][j] = {'exists':0,'edgeExists':[0,0,0,0],'edgeID':[-1,-1,-1,-1]};
 		}
 	}
 };
@@ -129,14 +130,16 @@ canvas.addEventListener('mousemove', e => {
 	//main drawing code
 	if(mouseDown && drawing){
 		//drawing new tiles
-		if(!removeDrawing && (drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] == 1 || moveDrawing)){
+		if(!removeDrawing && (drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)].exists == 1 || moveDrawing)){
 			moveDrawing = true;
-			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 1;
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)].exists = 1;
+			convertTilesToEdges();
 		}
 		//removing old tiles
 		else if(!moveDrawing){
 			removeDrawing = true;
-			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 0;
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)].exists = 0;
+			convertTilesToEdges();
 		}
 	}
 });
@@ -153,14 +156,37 @@ canvas.addEventListener('mousedown', e => {
 	}
 	mouseDown = true;
 	if(drawing){
-		if(drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] == 1){
-			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 0;
+		if(drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)].exists == 1){
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)].exists = 0;
+			convertTilesToEdges();
 		}
 		else{
-			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)] = 1;
+			drawArray[Math.floor(e.offsetX/tileSize)][Math.floor(e.offsetY/tileSize)].exists = 1;
+			convertTilesToEdges();
 		}
 	}
 });
+let edgeMap = new Array();
+/*
+	edgeMap
+	[
+		{
+			startX:0
+			startY:0
+			endX:0
+			endY:0
+		}
+	]
+*/
+//edges
+/*
+	{
+		'exists':0,						0 means false, 1 means true
+		'edgeExists':[0,0,0,0],		order: NSEW, 0 false, 1 true
+		'edgeID':[-1,-1,-1,-1]		order: NSEW, constains numerical ID
+	}
+*/
+
 //drawing obsticles 
 tileSizeDisplay.innerHTML = tileSizeSlider.value;
 //wind variables
@@ -234,7 +260,7 @@ tileSizeSlider.oninput = function(){
 	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
 		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
 		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
-			drawArray[i][j] = 0;
+			drawArray[i][j] = {'exists':0,'edgeExists':[0,0,0,0],'edgeID':[-1,-1,-1,-1]};
 		}
 	}
 }
@@ -252,7 +278,7 @@ widthSlider.oninput = function(){
 	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
 		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
 		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
-			drawArray[i][j] = 0;
+			drawArray[i][j] = {'exists':0,'edgeExists':[0,0,0,0],'edgeID':[-1,-1,-1,-1]};
 		}
 	}
 }
@@ -265,7 +291,7 @@ heightSlider.oninput = function(){
 	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
 		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
 		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
-			drawArray[i][j] = 0;
+			drawArray[i][j] = {'exists':0,'edgeExists':[0,0,0,0],'edgeID':[-1,-1,-1,-1]};
 		}
 	}
 }
@@ -393,10 +419,10 @@ function init(){
 	for(let i=0;i<UNITS;i++){
 		unitArray.push(new boid(FIELDX, FIELDY));
 	}
-	for(let i=0;i<Math.floor(FIELDX/10);i++){
-		drawArray[i] = new Array(Math.floor(FIELDY/10));
-		for(let j=0;j<Math.floor(FIELDY/10);j++){
-			drawArray[i][j] = 0;
+	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
+		drawArray[i] = new Array(Math.floor(FIELDY/tileSize));
+		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
+			drawArray[i][j] = {'exists':0,'edgeExists':[0,0,0,0],'edgeID':[-1,-1,-1,-1]};
 		}
 	}
 	doFrames();
@@ -590,11 +616,27 @@ function draw(){
 	ctx.fillStyle = "black";
 	for(let i=0;i<Math.floor(FIELDX/tileSize);i++){
 		for(let j=0;j<Math.floor(FIELDY/tileSize);j++){
-			if(drawArray[i][j] == 1){
+			if(drawArray[i][j].exists == 1){
 				//draw block
 				ctx.fillRect(i*tileSize,j*tileSize,tileSize,tileSize);
 			}
 		}
+	}
+	//temp code to visulize edge map
+	for(let i=0;i<edgeMap.length;i++){
+		ctx.beginPath();
+		ctx.arc(edgeMap[i].startX * tileSize,edgeMap[i].startY * tileSize, 5, 0, 2*Math.PI, false);
+		ctx.fillStyle = `rgb(255,0,0)`;
+		ctx.fill();
+		ctx.beginPath();
+		ctx.arc(edgeMap[i].endX * tileSize,edgeMap[i].endY * tileSize, 5, 0, 2*Math.PI, false);
+		ctx.fillStyle = `rgb(255,0,0)`;
+		ctx.fill();
+		ctx.beginPath();
+		ctx.moveTo(edgeMap[i].startX * tileSize,edgeMap[i].startY * tileSize);
+		ctx.lineTo(edgeMap[i].endX * tileSize,edgeMap[i].endY * tileSize);
+		ctx.strokeStyle = "red";
+		ctx.stroke();
 	}
 }
 
@@ -678,7 +720,7 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 		if(obsYBound < 0){
 			obsYBound = 0;
 		}
-		if(drawArray[obsXBound][obsYBound] == 1){
+		if(drawArray[obsXBound][obsYBound].exists == 1){
 			//dodge wall
 			let xDiff = planeArray[i].position.x - prevPosition.x;
 			let yDiff = planeArray[i].position.y - prevPosition.y;
@@ -988,4 +1030,162 @@ function injectRandomness(vec, intensity){
 	total.x = vec.x + (Math.random() * (intensity * 2)) - intensity;
 	total.y = vec.y + (Math.random() * (intensity * 2)) - intensity;
 	return total;
+}
+//edge detechtion functions
+function convertTilesToEdges(){
+	const NORTH = 0;
+	const SOUTH = 1;
+	const EAST = 2;
+	const WEST = 3;
+	edgeMap = new Array();
+	
+	//check tiles in draw array
+	for(let i=1;i<drawArray.length-1;i++){
+		for(let j=1;j<drawArray[i].length-1;j++){
+			if(drawArray[i][j].exists == 1){
+				drawArray[i][j].edgeExists = [0,0,0,0];
+				drawArray[i][j].edgeID = [-1,-1,-1,-1];
+				//block found
+				//check for western neighbor
+				if(drawArray[i-1][j].exists == 1){
+					//western neighbor found
+					//since its a wall, we do nothing
+				}
+				else{
+					//no western neighbor
+					//check for northern neighbor with a western edge
+					if(drawArray[i][j-1].exists){
+						//northern neighbor exists, check  for western edge
+						if(drawArray[i][j-1].edgeExists[WEST] == 1){
+							//northern neighbor has western edge, expand it to current block
+							drawArray[i][j].edgeExists[WEST] = 1;
+							drawArray[i][j].edgeID[WEST] = drawArray[i][j-1].edgeID[WEST];
+							edgeMap[drawArray[i][j].edgeID[WEST]].endY = j+1;
+						}
+						else{
+							//has northern neighbor, but no western edge
+							//we create a new western edge
+							drawArray[i][j].edgeExists[WEST] = 1;	//set edge as existing
+							drawArray[i][j].edgeID[WEST] = edgeMap.length;	//give an edge id
+							let newEdgeEntry = {'startX':i,'startY':j,'endX':i,'endY':j+1};
+							edgeMap.push(newEdgeEntry);
+						}
+					}
+					else{
+						//no northern neighbor
+						//we create a new edge here
+						drawArray[i][j].edgeExists[WEST] = 1;	//set edge as existing
+						drawArray[i][j].edgeID[WEST] = edgeMap.length;	//give an edge id
+						let newEdgeEntry = {'startX':i,'startY':j,'endX':i,'endY':j+1};
+						edgeMap.push(newEdgeEntry);
+					}
+				}
+				
+				//check for eastern neighbor
+				if(drawArray[i+1][j].exists == 1){
+					//eastern neighbor found
+					//since its a wall, we do nothing
+				}
+				else{
+					//no eastern neighbor
+					//check for northern neighbor with a eastern edge
+					if(drawArray[i][j-1].exists){
+						//northern neighbor exists, check  for eastern edge
+						if(drawArray[i][j-1].edgeExists[EAST] == 1){
+							//northern neighbor has eastern edge, expand it to current block
+							drawArray[i][j].edgeExists[EAST] = 1;
+							drawArray[i][j].edgeID[EAST] = drawArray[i][j-1].edgeID[EAST];
+							edgeMap[drawArray[i][j].edgeID[EAST]].endY = j+1;
+						}
+						else{
+							//has northern neighbor, but no eastern edge
+							//we create a new eastern edge
+							drawArray[i][j].edgeExists[EAST] = 1;	//set edge as existing
+							drawArray[i][j].edgeID[EAST] = edgeMap.length;	//give an edge id
+							let newEdgeEntry = {'startX':i+1,'startY':j,'endX':i+1,'endY':j+1};
+							edgeMap.push(newEdgeEntry);
+						}
+					}
+					else{
+						//no northern neighbor
+						//we create a new edge here
+						drawArray[i][j].edgeExists[EAST] = 1;	//set edge as existing
+						drawArray[i][j].edgeID[EAST] = edgeMap.length;	//give an edge id
+						let newEdgeEntry = {'startX':i+1,'startY':j,'endX':i+1,'endY':j+1};
+						edgeMap.push(newEdgeEntry);
+					}
+				}
+				
+				//check for northern neighbor
+				if(drawArray[i][j-1].exists == 1){
+					//northern neighbor found
+					//since its a wall, we do nothing
+				}
+				else{
+					//no northern neighbor
+					//check for western neighbor with a northern edge
+					if(drawArray[i-1][j].exists){
+						//western neighbor exists, check  for northern edge
+						if(drawArray[i-1][j].edgeExists[NORTH] == 1){
+							//western neighbor has northern edge, expand it to current block
+							drawArray[i][j].edgeExists[NORTH] = 1;
+							drawArray[i][j].edgeID[NORTH] = drawArray[i-1][j].edgeID[NORTH];
+							edgeMap[drawArray[i][j].edgeID[NORTH]].endX = i+1;
+						}
+						else{
+							//has northern neighbor, but no northern edge
+							//we create a new northern edge
+							drawArray[i][j].edgeExists[NORTH] = 1;	//set edge as existing
+							drawArray[i][j].edgeID[NORTH] = edgeMap.length;	//give an edge id
+							let newEdgeEntry = {'startX':i,'startY':j,'endX':i+1,'endY':j};
+							edgeMap.push(newEdgeEntry);
+						}
+					}
+					else{
+						//no northern neighbor
+						//we create a new edge here
+						drawArray[i][j].edgeExists[NORTH] = 1;	//set edge as existing
+						drawArray[i][j].edgeID[NORTH] = edgeMap.length;	//give an edge id
+						let newEdgeEntry = {'startX':i,'startY':j,'endX':i+1,'endY':j};
+						edgeMap.push(newEdgeEntry);
+					}
+				}
+				
+				//check southern edge
+				if(drawArray[i][j+1].exists == 1){
+					//southern neighbor found
+					//since its a wall, we do nothing
+				}
+				else{
+					//no southern neighbor
+					//check for western neighbor with a southern edge
+					if(drawArray[i-1][j].exists){
+						//western neighbor exists, check  for southern edge
+						if(drawArray[i-1][j].edgeExists[SOUTH] == 1){
+							//western neighbor has southern edge, expand it to current block
+							drawArray[i][j].edgeExists[SOUTH] = 1;
+							drawArray[i][j].edgeID[SOUTH] = drawArray[i-1][j].edgeID[SOUTH];
+							edgeMap[drawArray[i][j].edgeID[SOUTH]].endX = i+1;
+						}
+						else{
+							//has western neighbor, but no southern edge
+							//we create a new southern edge
+							drawArray[i][j].edgeExists[SOUTH] = 1;	//set edge as existing
+							drawArray[i][j].edgeID[SOUTH] = edgeMap.length;	//give an edge id
+							let newEdgeEntry = {'startX':i,'startY':j+1,'endX':i+1,'endY':j+1};
+							edgeMap.push(newEdgeEntry);
+						}
+					}
+					else{
+						//no western neighbor
+						//we create a new edge here
+						drawArray[i][j].edgeExists[SOUTH] = 1;	//set edge as existing
+						drawArray[i][j].edgeID[SOUTH] = edgeMap.length;	//give an edge id
+						let newEdgeEntry = {'startX':i,'startY':j+1,'endX':i+1,'endY':j+1};
+						edgeMap.push(newEdgeEntry);
+					}
+				}
+			}
+		}
+	}
 }
