@@ -110,7 +110,6 @@ let desiredY = FIELDY / 2;
 let goingToDesired = false;
 let tileSize = parseInt(tileSizeSlider.value);
 
-
 //variables for drawing obsticles
 let mouseDown = false;
 let drawing = false;
@@ -358,8 +357,11 @@ boarderButton.oninput = function(){
 	frame setup, this prevents the boids from just going as fast
 	as possible. only have this bc of turan showing me how.
 */
+let FPS = 0;
+let recentFPS = 0;
+let timePassed = 0;
 var frames = {
-	speed: (8000 / 144),
+	speed: 32,
 	count: 0,
 	max: -1,
 	timer: '',
@@ -374,6 +376,12 @@ var frames = {
 //this is what loops the frames indefinietly
 async function doFrames() {
 	frames.start(() => {
+		if(Date.now() - timePassed > 1000){
+			recentFPS = FPS;
+			FPS = 0;
+			timePassed = Date.now();
+		}
+		FPS++;
 		moveAllBoids(unitArray, FIELDX, FIELDY, SPEED);
 		if(BATTLE){
 			battle();
@@ -558,6 +566,15 @@ function draw(){
 			ctx.strokeStyle = `rgb(0,0,0)`;
 			ctx.stroke();
 		}
+		//draw line of site
+		if(true){
+			for(let x=0;x<unitArray[i].visibilityVector.length;x++){
+				ctx.beginPath();
+				ctx.moveTo(unitArray[i].position.x + 5, unitArray[i].position.y + 5);
+				ctx.lineTo(unitArray[i].visibilityVector[x].minPx * tileSize, unitArray[i].visibilityVector[x].minPy * tileSize);
+				ctx.stroke();
+			}
+		}
 	}
 	if(BATTLE){
 		let markerSize = 10;
@@ -596,7 +613,7 @@ function draw(){
 		}
 		if(winner){
 			ctx.font = `48px Tahoma`;
-			ctx.fillText('WINNER', (FIELDX/2)-91, 50)
+			ctx.fillText('WINNER', (FIELDX/2)-91, 50);
 		}
 	}
 	//draw obsticles
@@ -627,6 +644,9 @@ function draw(){
 			ctx.stroke();
 		}
 	}
+	//write FPS
+	ctx.font = `12px Tahoma`;
+	ctx.fillText(`FPS:${recentFPS}`,0,10);
 }
 
 /*
@@ -638,7 +658,7 @@ class boid{
 	position = {'x':0,'y':0};
 	velocity = {'x':0,'y':0};
 	color = {'r':0,'g':0,'b':0};
-	
+	visibilityVector = new Array();
 	constructor(boundX, boundY){
 		this.position.x = Math.floor(Math.random() * boundX);
 		this.position.y = Math.floor(Math.random() * boundY);
@@ -721,6 +741,7 @@ function moveAllBoids(planeArray, fieldXSize, fieldYSize, maxSpeed){
 			
 			planeArray.position = prevPosition;
 		}
+		planeArray[i].visibilityVector = calculateVisibilityPolygon(planeArray[i].visibilityVector,planeArray[i].position,VISIONDISTANCE);
 	}
 }
 /*
@@ -1013,21 +1034,21 @@ function subVector(vec1, vec2){
 	total.y = vec1.y - vec2.y;
 	return total;
 }
-//although not necessarly math, it does apply to vectors only 
+//although not necessary math, it does apply to vectors only 
 function injectRandomness(vec, intensity){
 	let total = {'x':0,'y':0};
 	total.x = vec.x + (Math.random() * (intensity * 2)) - intensity;
 	total.y = vec.y + (Math.random() * (intensity * 2)) - intensity;
 	return total;
 }
-//edge detechtion functions
+//edge detection functions
 function convertTilesToEdges(){
 	const NORTH = 0;
 	const SOUTH = 1;
 	const EAST = 2;
 	const WEST = 3;
 	edgeMap = new Array();
-	
+	//set boarder as a long edge
 	//check tiles in draw array
 	for(let i=1;i<drawArray.length-1;i++){
 		for(let j=1;j<drawArray[i].length-1;j++){
@@ -1177,4 +1198,54 @@ function convertTilesToEdges(){
 			}
 		}
 	}
+}
+function calculateVisibilityPolygon(visibilityArray,position,visionRadius){
+	visibilityArray = new Array();
+	for(let i=0;i<edgeMap.length;i++){
+		for(let j=0;j<2;j++){
+			let rdx = (i == 0 ? edgeMap[i].startX : edgeMap[i].endX) - position.x;
+			let rdy = (i == 0 ? edgeMap[i].startY : edgeMap[i].endY) - position.y;
+			let baseAngle = Math.atan2(rdy, rdx);
+			let angle = 0;
+			for(let k=0;k<3;k++){
+				if(k == 0)
+					angle = baseAngle - 0.0001;
+				if(k == 1)
+					angle = baseAngle;
+				if(k == 2)
+					angle = baseAngle + 0.0001;
+				rdx = visionRadius * Math.cos(angle);
+				rdy = visionRadius * Math.sin(angle);
+				let minT1 = 99999999;
+				let minPx = 0;
+				let minPy = 0;
+				let minAngle = 0;
+				let bValid = false;
+				for(let l=0;l<edgeMap.length;l++){
+					let sdx = edgeMap[l].endX - edgeMap[l].startX;
+					let sdy = edgeMap[l].endY - edgeMap[l].startY;
+					if(Math.abs(sdx - rdx) > 0 && Math.abs(sdy - rdy) > 0){
+						let t2 = (rdx * (edgeMap[l].startY - position.y) + (rdy * (position.x - edgeMap[l].startX)))/((sdx * rdy) - (sdy * rdx));
+						let t1 = (edgeMap[l].startX + (sdx * t2) - position.x)/rdx;
+						if(t1 > 0 && t2 >= 0 && t2 <= 1){
+							if(t1 < minT1){
+								minT1 = t1;
+								minPx = position.x + (rdx * t1);
+								minPy = position.y + (rdy * t1);
+								minAngle = Math.atan2(minPy - position.y, minPx - position.x);
+								bValid = true;
+							}
+						}
+					}
+				}
+				if(bValid){
+					visibilityArray.push({minAngle,minPx,minPy});
+				}
+			}
+		}
+	}
+	visibilityArray.sort(function(a,b){
+		return b.minAngle - a.minAngle;
+	});
+	return visibilityArray;
 }
