@@ -20,6 +20,9 @@ flag.src = "./flag.png";
 	by the category of the sliders (boid, area, canvas, etc)
 	as new sliders are added, they are to be init. here
 */
+let simSpeedSlider = document.getElementById("simSpeed");
+let simSpeedInfo = document.getElementById("simSpeedDisplay");
+simSpeedInfo.innerHTML = simSpeedSlider.value;
 //boid modifiers
 let speedSlider = document.getElementById("maxSpeed");
 let speedInfo = document.getElementById("speedDisplay");
@@ -98,7 +101,7 @@ let XMIN = BOUNDS;
 let XMAX = FIELDX - BOUNDS;
 let YMIN = BOUNDS;
 let YMAX = FIELDY - BOUNDS;
-
+let SIMSPEED = parseInt(simSpeedSlider.value)
 //go to position
 /*
 	these variables are responsible for handling
@@ -131,6 +134,10 @@ let colorBias = false;
 	this is where all sliders update values when they are changed
 */
 //boid sliders
+simSpeedSlider.oninput = function(){
+	SIMSPEED = parseInt(this.value);
+	simSpeedInfo.innerHTML = this.value;
+}
 speedSlider.oninput = function(){
 	SPEED = parseInt(this.value);
 	speedInfo.innerHTML = this.value;
@@ -265,26 +272,11 @@ velLineButton.oninput = function(){
 boarderButton.oninput = function(){
 	boarderView = !boarderView;
 }
-/*
-	frame setup, this prevents the boids from just going as fast
-	as possible. only have this bc of turan showing me how.
-*/
-var frames = {
-	speed: (8000 / 144),
-	count: 0,
-	max: -1,
-	timer: '',
-	run: function (func) {
-		this.timer = setInterval(func, this.speed);
-	},
-	start: function (func, speed = 100) {
-		this.speed = speed;
-		this.run(func);
-	}
-}
 //this is what loops the frames indefinietly
+let speedCount = 0;
 async function doFrames() {
-	frames.start(() => {
+	if(speedCount >= SIMSPEED){
+		speedCount = 0;
 		moveAllBoids(unitArray, FIELDX, FIELDY, SPEED);
 		if(BATTLE){
 			battle();
@@ -306,7 +298,9 @@ async function doFrames() {
 				currentUnits--;
 			}
 		}
-	}, frames.speed);
+	}
+	speedCount++;
+	window.requestAnimationFrame(doFrames);
 }
 
 /*
